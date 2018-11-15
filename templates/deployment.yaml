@@ -1,0 +1,144 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.clientName }}
+  labels:
+    application: demo
+    version: v1
+spec:
+  selector:
+    matchLabels:
+      tier: app
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        tier: app
+    spec:
+      volumes:
+        - name: pwa-disk
+          emptyDir: {}
+      hostAliases:
+        - ip: "127.0.0.1"
+          hostnames:
+            - "php"
+      initContainers:
+        - name: assets
+          image: "{{ .Values.images.php.repository }}:{{ .Values.images.php.tag }}"
+          command: [bash, -c]
+          args: ["cp -r /codebase/public/* /data"]
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /data
+              name: pwa-disk
+        - name: migrations
+          image: "{{ .Values.images.php.repository }}:{{ .Values.images.php.tag }}"
+          command: [bash, -c]
+          args: ["php artisan migrate --force"]
+          imagePullPolicy: Always
+          env:
+            - name: DB_CONNECTION
+              value: mysql
+            - name: DB_HOST
+              value: mysql-service
+            - name: DB_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: mysql-config
+                  key: database
+            - name: DB_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: mysql-config
+                  key: user
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-user
+                  key: password
+      containers:
+        - name: bonus-nginx
+          image: "{{ .Values.images.nginx.repository }}:{{ .Values.images.nginx.tag }}"
+          volumeMounts:
+            - name: pwa-disk
+              mountPath: /codebase/public
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "10m"
+            limits:
+              memory: "512Mi"
+              cpu: "50m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+
+        - name: php
+          image: "{{ .Values.images.php.repository }}:{{ .Values.images.php.tag }}"
+          ports:
+            - containerPort: 9000
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "10m"
+            limits:
+              memory: "512Mi"
+              cpu: "50m"
+          env:
+            - name: PUSHER_APP_ID
+              value: "641247"
+            - name: PUSHER_APP_KEY
+              value: 0d3c221027dbb7c58edd
+            - name: PUSHER_APP_SECRET
+              value: f71e9a178969ed8a7133
+            - name: LOG_CHANNEL
+              value: daily
+            - name: APP_URL
+              value: https://demo-service.cluster.arts-digital.ru
+            - name: APP_ENV
+              value: production
+            - name: APP_NAME
+              value: Laravel
+            - name: APP_KEY
+              value: base64:ZM8DdE5bm1haJJGyfJjmh6MVpdtg28z5MVaB6Qqut7Y=
+            - name: APP_LOG_LEVEL
+              value: debug
+            - name: DB_CONNECTION
+              value: mysql
+            - name: DB_HOST
+              value: mysql-service
+            - name: DB_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: mysql-config
+                  key: database
+            - name: DB_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: mysql-config
+                  key: user
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-user
+                  key: password
+            - name: MAIL_DRIVER
+              value: log
+            - name: JWT_SECRET
+              value: KzfX3MYgdDbBgtLL3MaTzpuRkfrs4Xk5
+            - name: JWT_TTL
+              value: "600"
+
+  minReadySeconds: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1

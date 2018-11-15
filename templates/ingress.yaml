@@ -1,0 +1,15 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ .Values.clientName }}
+  labels:
+    application: demo
+    client: {{ .Values.clientName }}
+spec:
+  rules:
+    - host: "demo-service.cluster.arts-digital.ru"
+      http:
+        paths:
+          - backend:
+              serviceName: {{ .Values.clientName }}
+              servicePort: {{ .Values.service.port }}
