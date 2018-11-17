@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: {{ .Values.clientName }}
   labels:
-    application: demo
+    application: {{ .Values.clientName }}
     version: v1
 spec:
   type: {{ .Values.service.type }}
