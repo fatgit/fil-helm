@@ -1,0 +1,13 @@
+apiVersion: v1
+entries:
+  bonus:
+  - apiVersion: v1
+    appVersion: "1.0"
+    created: 2018-11-17T15:46:31.84985-08:00
+    description: A Helm chart for Kubernetes
+    digest: 6c9925f4720cf8f4d42c1ecdbd8f3795a40cb5da0574dd30ce9379991c70f455
+    name: bonus
+    urls:
+    - https://fatgit.github.io/fil-helm/bonus-0.1.0.tgz
+    version: 0.1.0
+generated: 2018-11-17T15:46:31.848208-08:00
